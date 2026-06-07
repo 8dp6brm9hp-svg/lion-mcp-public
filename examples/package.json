@@ -1,0 +1,13 @@
+{
+  "name": "lion-x402-example",
+  "version": "1.0.0",
+  "description": "Reference keyless x402 client for the LION MCP server",
+  "type": "module",
+  "scripts": {
+    "pay": "node --max-http-header-size=131072 pay-lion.mjs"
+  },
+  "dependencies": {
+    "ethers": "^6.13.0"
+  },
+  "license": "MIT"
+}
