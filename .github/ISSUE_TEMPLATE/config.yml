@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: LION live catalog
+    url: https://lionx402.com/api/x402/catalog
+    about: Full live tool catalog and pricing
+  - name: x402 discovery manifest
+    url: https://lionx402.com/.well-known/x402.json
+    about: Machine-readable discovery manifest
