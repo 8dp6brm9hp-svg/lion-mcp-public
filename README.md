@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/lion-logo-400.png" alt="LION" width="150"></p>
+
 # LION x402 — Keyless MCP Enrichment for Agents
 
 **LION** is a keyless, account-less [MCP](https://modelcontextprotocol.io) server that gives AI agents pay-per-call access to real-world business & crypto data. Agents pay per call in **USDC on Base** via the [x402](https://x402.org) protocol (HTTP 402 + EIP-3009) — **no API key, no signup, no subscription. Payment is the only gate.**
