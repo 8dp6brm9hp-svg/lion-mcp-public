@@ -8,11 +8,12 @@ so your agent can verify integrity offline. Start free, upgrade per-call.
 
 ## 1. See real data now — free, no wallet (10 seconds)
 
-Requires Node 18+ (built-in `fetch`). No install.
+No install, no dependencies. Pick your language:
 
 ```bash
 cd examples
-node try-free.mjs stripe.com
+node try-free.mjs stripe.com     # Node 18+ (built-in fetch)
+python3 try_free.py stripe.com   # Python 3 (standard library only)
 ```
 
 You get real firmographics **plus an attestation block** — proof the response wasn't
@@ -53,6 +54,8 @@ can fulfill (see step 3).
 Paid tools cost ~$0.002–$0.01. You pay from **your own** funded Base wallet — LION
 never holds a key. The signed EIP-3009 transfer authorization *is* the payment.
 
+**Node** (ethers):
+
 ```bash
 cd examples
 npm install                       # ethers only
@@ -61,13 +64,23 @@ LION_PK=0x<your-base-wallet-key> \
   "https://lionx402.com/api/x402/cpg-product-intel-json?barcode=5449000000996"
 ```
 
+**Python** (eth-account):
+
+```bash
+cd examples
+pip install -r requirements.txt   # eth-account only
+LION_PK=0x<your-base-wallet-key> \
+  python3 pay_lion.py \
+  "https://lionx402.com/api/x402/cpg-product-intel-json?barcode=5449000000996"
+```
+
 - `LION_PK` is read from the env so it never hits your shell history. Use a
   **dedicated low-balance wallet** funded with a little USDC on Base.
 - The flow: `GET` → `402` + payment requirements → sign → retry with
   `Payment-Signature` header → `200` + attested data. No retries to babysit.
 
-The full keyless client is `examples/pay-lion.mjs` (~70 lines, no SDK lock-in) — copy
-it into your agent as-is.
+Both clients are ~100 lines, no SDK lock-in — copy `pay-lion.mjs` or `pay_lion.py`
+into your agent as-is. They emit byte-identical payment signatures.
 
 ---
 
