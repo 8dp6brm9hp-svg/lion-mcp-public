@@ -48,7 +48,7 @@ Full live catalog: [`/api/x402/catalog`](https://lionx402.com/api/x402/catalog) 
 3. Send the signed authorization in the `Payment-Signature` header and retry → **200 + data**.
 4. A community facilitator broadcasts the authorization and pays gas; funds move **directly** buyer → payTo on-chain. LION never holds keys or funds.
 
-A complete working reference client is in [`examples/pay-lion.mjs`](examples/pay-lion.mjs).
+Complete keyless reference clients: [`examples/pay-lion.mjs`](examples/pay-lion.mjs) (Node) and [`examples/pay_lion.py`](examples/pay_lion.py) (Python). A runnable end-to-end agent — counterparty due-diligence (firmographics + OFAC + token risk, with attestation verified) — is in [`examples/agents/`](examples/agents/).
 
 ## Verifying the attestation
 
@@ -63,7 +63,7 @@ Each paid response includes an `attestation` block:
 }
 ```
 
-Recompute `SHA-256(canonical sorted-key JSON of the body without the attestation field)` and verify the Ed25519 signature against the published `signer`. Helper: `GET https://lionx402.com/api/x402/enrich-v1-json?verify_helper=1`.
+Recompute `SHA-256(canonical sorted-key JSON of the body without the attestation field)` and verify the Ed25519 signature against the published `signer`. Ready-made verifiers (browser / Node / zero-dep Python) are in [`examples/verify/`](examples/verify/) — open `index.html` to paste-and-verify offline. Live helper: `GET https://lionx402.com/api/x402/enrich-v1-json?verify_helper=1`.
 
 ## Why LION
 

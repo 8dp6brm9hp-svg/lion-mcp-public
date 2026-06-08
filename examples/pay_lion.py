@@ -11,6 +11,7 @@ no account: the signed EIP-3009 transfer authorization IS the payment.
 The private key is read from LION_PK so it never lands in shell history. Use a
 dedicated, low-balance wallet funded with a little USDC on Base.
 
+Importable: `from pay_lion import pay` -> pay(resource_url, private_key).
 Signing is byte-for-byte identical to the proven JS reference (examples/pay-lion.mjs);
 this client only differs in language, not in the bytes it puts on the wire.
 """
@@ -54,31 +55,14 @@ def pick_accept(body):
     return accepts[0] if accepts else None
 
 
-def main():
-    if len(sys.argv) < 2:
-        sys.exit("ERROR: pass the paid resource URL as argument 1")
-    resource = sys.argv[1]
-    pk = (os.environ.get("LION_PK") or "").strip()
-    if pk and not pk.startswith("0x"):
-        pk = "0x" + pk
-    if not pk:
-        sys.exit("ERROR: set LION_PK to your funded Base wallet private key")
+def build_payment_header(accept, acct) -> str:
+    """Sign the EIP-3009 authorization, return the base64url x402 envelope header.
 
-    acct = Account.from_key(pk)
-    print("payer:", acct.address, file=sys.stderr)
-
-    status, text = http(resource)
-    challenge = json.loads(text)
-    if not challenge.get("accepts"):
-        print(json.dumps({"note": "no 402 (free/already paid)", "challenge": challenge}, indent=2))
-        return
-
-    accept = pick_accept(challenge)
+    Byte-identical to the proven JS reference (examples/pay-lion.mjs).
+    """
     value = str(accept.get("amount") or accept.get("maxAmountRequired"))
     asset = accept["asset"]
     pay_to = accept["payTo"]
-    print(f"paying: {int(value) / 1e6} USDC -> {pay_to}", file=sys.stderr)
-
     now = int(time.time())
     nonce_hex = secrets.token_hex(32)  # unique per signature, forever
     authorization = {
@@ -143,13 +127,39 @@ def main():
         },
     }
     # Header value = base64url(JSON). Server base64url-decodes then JSON.parses.
-    header = b64u(json.dumps(envelope, separators=(",", ":")).encode())
+    return b64u(json.dumps(envelope, separators=(",", ":")).encode())
+
+
+def pay(resource: str, pk: str):
+    """Pay a LION 402 route; return (status, body). body is a dict when JSON.
+
+    Free / already-paid routes return their body directly with no payment.
+    Reusable from other scripts and agents.
+    """
+    if pk and not pk.startswith("0x"):
+        pk = "0x" + pk
+    acct = Account.from_key(pk)
+    status, text = http(resource)
+    challenge = json.loads(text)
+    if not challenge.get("accepts"):
+        return status, challenge  # not a 402 (free or already paid)
+    header = build_payment_header(pick_accept(challenge), acct)
     status, text = http(resource, {"accept": "application/json", "Payment-Signature": header})
-    print("HTTP", status)
     try:
-        print(json.dumps(json.loads(text), indent=2))
+        return status, json.loads(text)
     except json.JSONDecodeError:
-        print(text)
+        return status, text
+
+
+def main():
+    if len(sys.argv) < 2:
+        sys.exit("ERROR: pass the paid resource URL as argument 1")
+    pk = (os.environ.get("LION_PK") or "").strip()
+    if not pk:
+        sys.exit("ERROR: set LION_PK to your funded Base wallet private key")
+    status, body = pay(sys.argv[1], pk)
+    print("HTTP", status)
+    print(json.dumps(body, indent=2) if isinstance(body, (dict, list)) else body)
 
 
 if __name__ == "__main__":
