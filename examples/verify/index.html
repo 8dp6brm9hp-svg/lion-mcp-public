@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LION attestation verifier — don't trust, verify</title>
+<style>
+  :root { color-scheme: light dark; --ok:#1a7f37; --bad:#cf222e; --warn:#9a6700; --mut:#656d76; --bd:#d0d7de; }
+  body { font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 820px; margin: 2rem auto; padding: 0 1rem; }
+  h1 { font-size: 1.4rem; margin-bottom: .25rem; }
+  p.sub { color: var(--mut); margin-top: 0; }
+  textarea { width: 100%; min-height: 220px; font: 12.5px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; padding: .6rem; border: 1px solid var(--bd); border-radius: 8px; box-sizing: border-box; }
+  .row { display: flex; gap: .5rem; margin: .6rem 0; flex-wrap: wrap; }
+  button { font: inherit; padding: .5rem .9rem; border: 1px solid var(--bd); border-radius: 8px; background: Canvas; cursor: pointer; }
+  button.primary { background: #0969da; color: #fff; border-color: #0969da; }
+  #result { border: 1px solid var(--bd); border-radius: 8px; padding: .9rem 1rem; margin-top: .6rem; display: none; }
+  #verdict { font-size: 1.15rem; font-weight: 600; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); } .warn { color: var(--warn); }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: .15rem .8rem; margin: .6rem 0 0; }
+  dt { color: var(--mut); } dd { margin: 0; font-family: ui-monospace, monospace; font-size: 12.5px; word-break: break-all; }
+  .note { color: var(--mut); font-size: 13px; border-top: 1px solid var(--bd); margin-top: 1.4rem; padding-top: .8rem; }
+  code { font-family: ui-monospace, monospace; font-size: 12.5px; }
+</style>
+</head>
+<body>
+  <h1>LION attestation verifier</h1>
+  <p class="sub">Paste any LION response. This page verifies the Ed25519 attestation <strong>entirely in your browser</strong> — offline, nothing is sent anywhere.</p>
+
+  <textarea id="input" placeholder='Paste a LION JSON response (it must include the "attestation" field)…' spellcheck="false"></textarea>
+  <div class="row">
+    <button class="primary" id="verify">Verify</button>
+    <button id="example">Load example</button>
+    <button id="tamper">Load example, tampered</button>
+  </div>
+
+  <div id="result">
+    <div id="verdict"></div>
+    <dl id="details"></dl>
+  </div>
+
+  <p class="note">
+    <strong>What this proves:</strong> the bytes are exactly what LION signed — authentic and untampered (<em>integrity</em>).
+    It does <strong>not</strong> prove any fact is true or current; judge that from each field's <code>source</code>, <code>as_of</code>, and <code>confidence</code>.
+    LION's published signer key is
+    <code>H9jfKtGS3G8mGzA2fH7KSzyvEhk0j-j9gvmqMrjQt7w</code> (a valid signature from any other key is flagged as “not from LION”).
+    Same logic, scriptable: <code>verify.mjs</code> (Node) and <code>lion_verify.py</code> (Python, zero-dep).
+  </p>
+
+  <script type="application/json" id="example-data">
+{
+  "asset_id": "LION_QUICK_INTEL_001",
+  "entity": "coinbase.com",
+  "as_of": "2026-06-08T03:37:13.279Z",
+  "resolved": true,
+  "data": {
+    "name": "Coinbase",
+    "description": "American company that operates a cryptocurrency exchange platform",
+    "website": "https://www.coinbase.com",
+    "founded_year": 2012,
+    "employees": {
+      "count": 1249,
+      "as_of": "2020"
+    },
+    "industry": [
+      "Bitcoin",
+      "cryptocurrency industry",
+      "fintech"
+    ],
+    "country": "United States"
+  },
+  "source": "Wikidata (CC0)",
+  "confidence": 0.4,
+  "freshness": {
+    "time_sensitive_field": "employees",
+    "employees_as_of": "2020",
+    "years_stale": 6,
+    "note": "Time-sensitive fields (e.g. employees) are 6y old per Wikidata; confidence reduced accordingly. Timeless fields (founded year, country, industry) are unaffected."
+  },
+  "note": "Free tier: real, basic firmographics from Wikidata. Fields are null where Wikidata has no value — never fabricated. For deeper attested data (SEC financials, fuller firmographics, decoded on-chain tx context) see the paid tools lion_enrich_v1 and lion_composite_bundle.",
+  "free_tier": "Free, no payment. Rate-limited per wallet (?wallet=0x...).",
+  "ref": null,
+  "attestation": {
+    "alg": "ed25519",
+    "signer": "H9jfKtGS3G8mGzA2fH7KSzyvEhk0j-j9gvmqMrjQt7w",
+    "payload_sha256": "d00fff4facdbad66858bc6f149afd298da891f6f6db238200628effd9407fb3e",
+    "signature": "Cjrxu0bcQW9kNP_xWdGPWVL8AdiGNf55tgibkZ2TL8TT5cxBI54f8WQa_Jc9P84Rp2iUsWBeruG5S6RIS4ICBQ",
+    "signed_at": "2026-06-08T03:37:13.279Z",
+    "scheme": "Ed25519(SHA-256(canonical sorted-key JSON of this body WITHOUT the attestation field)). Tamper-evident + verifiable offline. Attests INTEGRITY only (this exact response, untampered, from LION's published key) — NOT veracity: whether the facts are true or current is judged from each field's source, as_of, and confidence."
+  }
+}
+  </script>
+
+  <script>
+  // LION's published Ed25519 signer (trust anchor).
+  const LION_PUBLISHED_SIGNER = "H9jfKtGS3G8mGzA2fH7KSzyvEhk0j-j9gvmqMrjQt7w";
+
+  // Canonical JSON: recursively sort object keys; arrays keep order.
+  // Must match the server's signer exactly: Ed25519(SHA-256(this string)).
+  function stableStringify(v) {
+    if (v === null || typeof v !== "object") return JSON.stringify(v);
+    if (Array.isArray(v)) return "[" + v.map(stableStringify).join(",") + "]";
+    const k = Object.keys(v).sort();
+    return "{" + k.map((x) => JSON.stringify(x) + ":" + stableStringify(v[x])).join(",") + "}";
+  }
+  function b64urlToBytes(s) {
+    s = String(s).replace(/-/g, "+").replace(/_/g, "/");
+    while (s.length % 4) s += "=";
+    const bin = atob(s);
+    const a = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
+    return a;
+  }
+  function toHex(b) { let s = ""; for (let i = 0; i < b.length; i++) s += b[i].toString(16).padStart(2, "0"); return s; }
+
+  async function lionVerifyAttestation(resp) {
+    if (!resp || !resp.attestation || !resp.attestation.signature) return { ok: false, reason: "no_attestation" };
+    const att = resp.attestation;
+    const body = Object.assign({}, resp); delete body.attestation;
+    const canonical = stableStringify(body);
+    const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canonical)));
+    let ok = false;
+    try {
+      const key = await crypto.subtle.importKey("raw", b64urlToBytes(att.signer), { name: "Ed25519" }, false, ["verify"]);
+      ok = await crypto.subtle.verify("Ed25519", key, b64urlToBytes(att.signature), hash);
+    } catch (e) {
+      return { ok: false, reason: "verify_error: " + (e && e.message), signer: att.signer };
+    }
+    return {
+      ok: !!ok,
+      signer: att.signer,
+      trusted_signer: att.signer === LION_PUBLISHED_SIGNER,
+      payload_sha256: toHex(hash),
+      sha256_matches_claim: !att.payload_sha256 || att.payload_sha256 === toHex(hash),
+    };
+  }
+
+  const $ = (id) => document.getElementById(id);
+  const exampleText = () => $("example-data").textContent.trim();
+
+  async function run() {
+    const result = $("result"), verdict = $("verdict"), details = $("details");
+    result.style.display = "block";
+    let resp;
+    try { resp = JSON.parse($("input").value); }
+    catch (e) { verdict.className = "bad"; verdict.textContent = "❌ Not valid JSON"; details.innerHTML = ""; return; }
+
+    if (!window.crypto || !crypto.subtle) {
+      verdict.className = "warn"; verdict.textContent = "⚠️ This browser lacks WebCrypto"; details.innerHTML = ""; return;
+    }
+    let r;
+    try { r = await lionVerifyAttestation(resp); }
+    catch (e) { verdict.className = "warn"; verdict.textContent = "⚠️ " + e.message + " (browser may not support Ed25519 WebCrypto — try Node/Python clients)"; details.innerHTML = ""; return; }
+
+    if (r.ok && r.trusted_signer) { verdict.className = "ok"; verdict.textContent = "✅ AUTHENTIC — untampered, signed by LION's published key"; }
+    else if (r.ok) { verdict.className = "warn"; verdict.textContent = "⚠️ Signature valid, but signer is NOT LION's published key — not from LION"; }
+    else { verdict.className = "bad"; verdict.textContent = "❌ NOT VERIFIED — tampered, malformed, or unsigned. Do not trust."; }
+
+    const rows = [
+      ["ok", String(r.ok)],
+      ["signer", r.signer || "—"],
+      ["trusted_signer (== LION key)", String(r.trusted_signer)],
+      ["payload_sha256 (recomputed)", r.payload_sha256 || "—"],
+      ["sha256 matches claim", String(r.sha256_matches_claim)],
+    ];
+    if (r.reason) rows.push(["reason", r.reason]);
+    details.innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
+  }
+
+  $("verify").onclick = run;
+  $("example").onclick = () => { $("input").value = exampleText(); run(); };
+  $("tamper").onclick = () => {
+    const o = JSON.parse(exampleText());
+    o.data.name = o.data.name + " (edited)";   // any change breaks the signature
+    $("input").value = JSON.stringify(o, null, 2); run();
+  };
+  </script>
+</body>
+</html>

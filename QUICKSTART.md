@@ -104,6 +104,10 @@ untampered, not that any external fact is true — judge that from each field's
 `source`, `as_of`, and `confidence`.) The published signer key is at
 `https://lionx402.com/api/x402/enrich-v1-json?verify_helper=1`.
 
+Ready-made verifiers in [`examples/verify/`](./examples/verify/): open `index.html`
+to paste-and-verify in your browser (fully offline), or use `verify.mjs` (Node) /
+`lion_verify.py` (Python, zero-dependency) in code or CI.
+
 ---
 
 ## What's available
