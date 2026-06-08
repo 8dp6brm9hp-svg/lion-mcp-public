@@ -4,6 +4,8 @@
 
 Every response is **cryptographically Ed25519-attested**: an agent can verify *offline* that the data was not tampered with — provable, not self-reported.
 
+> 🚀 **New here? → [QUICKSTART.md](./QUICKSTART.md)** — real attested data free in 10 seconds (no wallet), then your first paid call in 2 minutes.
+
 - **MCP endpoint (Streamable HTTP):** `https://lionx402.com/api/mcp`
 - **Discovery manifest:** `https://lionx402.com/.well-known/x402.json`
 - **Free tier:** 100 calls/month per wallet via `?wallet=0x...`; or start with the free `lion_declare_need` / `lion_quick_intel` tools.
