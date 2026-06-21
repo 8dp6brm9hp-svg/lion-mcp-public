@@ -1,9 +1,9 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "com.lionx402/lion-x402",
-  "title": "LION - keyless attested data for AI agents",
-  "description": "Keyless attested data for AI agents: company enrichment, token risk, onchain reads. x402 on Base.",
-  "version": "1.9.0",
+  "title": "LION - keyless attested compliance & data for AI agents",
+  "description": "Keyless x402 compliance for agents: screen a counterparty, get a portable signed compliance receipt.",
+  "version": "1.11.0",
   "websiteUrl": "https://lionx402.com",
   "repository": {
     "url": "https://github.com/8dp6brm9hp-svg/lion-mcp-public",
