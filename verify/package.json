@@ -1,0 +1,34 @@
+{
+  "name": "@lionx402/receipt-verifier",
+  "version": "1.0.0",
+  "description": "Offline Ed25519 verifier for LION x402 attested responses and signed compliance receipts. Zero dependencies, works in Node and the browser.",
+  "type": "module",
+  "main": "lion-verify.mjs",
+  "exports": {
+    ".": "./lion-verify.mjs"
+  },
+  "bin": {
+    "lion-verify": "lion-verify.mjs"
+  },
+  "scripts": {
+    "test": "node test.mjs"
+  },
+  "files": [
+    "lion-verify.mjs",
+    "README.md"
+  ],
+  "license": "MIT",
+  "homepage": "https://lionx402.com",
+  "keywords": [
+    "x402",
+    "lion",
+    "ed25519",
+    "attestation",
+    "compliance",
+    "compliance-receipt",
+    "ofac",
+    "ai-agents",
+    "offline-verify",
+    "tamper-evident"
+  ]
+}
