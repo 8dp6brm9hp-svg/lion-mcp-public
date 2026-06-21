@@ -4,7 +4,7 @@
 
 **LION** is a keyless, account-less [MCP](https://modelcontextprotocol.io) server that gives AI agents pay-per-call access to real-world business & crypto data. Agents pay per call in **USDC on Base** via the [x402](https://x402.org) protocol (HTTP 402 + EIP-3009) — **no API key, no signup, no subscription. Payment is the only gate.**
 
-Every response is **cryptographically Ed25519-attested**: an agent can verify *offline* that the data was not tampered with — provable, not self-reported.
+Every response is **cryptographically Ed25519-attested**: an agent can verify *offline* that the data was not tampered with — provable, not self-reported. Verify it yourself with the zero-dependency package in [`verify/`](./verify) (`@lionx402/receipt-verifier`, Node + browser + CLI). Check x402 client compatibility in [CLIENT_COMPAT.md](./CLIENT_COMPAT.md).
 
 > 🚀 **New here? → [QUICKSTART.md](./QUICKSTART.md)** — real attested data free in 10 seconds (no wallet), then your first paid call in 2 minutes.
 
