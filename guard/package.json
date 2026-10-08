@@ -1,0 +1,48 @@
+{
+  "name": "@lionx402/guard",
+  "version": "0.1.0",
+  "description": "Screen-before-you-pay for autonomous x402 agents. Reads payTo from the PAYMENT-REQUIRED header, pays LION's $0.001 OFAC screen, and proceeds only on PASS. The same wallet again is the $0.01 recheck; only GO proceeds. Zero mandatory dependencies.",
+  "type": "module",
+  "main": "index.mjs",
+  "exports": {
+    ".": "./index.mjs"
+  },
+  "scripts": {
+    "test": "node test.mjs"
+  },
+  "files": [
+    "index.mjs",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "x402-fetch": "*"
+  },
+  "peerDependenciesMeta": {
+    "x402-fetch": {
+      "optional": true
+    }
+  },
+  "license": "MIT",
+  "homepage": "https://lionx402.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/8dp6brm9hp-svg/lion-mcp-public.git",
+    "directory": "guard"
+  },
+  "keywords": [
+    "x402",
+    "lion",
+    "lion-guard",
+    "ai-agents",
+    "agentic-payments",
+    "compliance",
+    "ofac",
+    "sanctions",
+    "counterparty-screening",
+    "screen-before-you-pay",
+    "compliance-receipt",
+    "base",
+    "usdc",
+    "keyless"
+  ]
+}
