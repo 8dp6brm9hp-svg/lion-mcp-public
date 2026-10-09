@@ -30,7 +30,13 @@ GET https://lionx402.com/api/x402/wallet-screen-json?address=<PAYTO>
 PAYTO=0x...                      # the counterparty you're about to pay
 LION="https://lionx402.com/api/x402/wallet-screen-json?address=$PAYTO"
 
-REQ=$(curl -s "$LION" | jq -c '.accepts[0]')                 # LION 402 challenge
+# LION's 402 body is {}. The challenge is the PAYMENT-REQUIRED header.
+HDR=$(curl -sD - -o /tmp/lion_screen_body.json "$LION" | awk 'tolower($1)=="payment-required:" { gsub(/\r/,""); print $2; exit }')
+if [ -n "$HDR" ]; then
+  REQ=$(printf '%s' "$HDR" | python3 -c 'import sys,base64,json; s=sys.stdin.read().strip().replace("-","+").replace("_","/"); s+="="*((4-len(s)%4)%4); print(json.dumps(json.loads(base64.b64decode(s))["accepts"][0], separators=(",", ":")))')
+else
+  REQ=$(jq -c '.accepts[0]' /tmp/lion_screen_body.json)
+fi
 addr=$(cdp evm accounts by-name name=$ACCOUNT | jq -r .address)
 payload=$(cdp util x402 build --from $addr --payment-requirements "$REQ")
 D=$(echo "$payload" | jq -c .domain); T=$(echo "$payload" | jq -c .types)
