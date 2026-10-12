@@ -74,7 +74,8 @@ GET https://lionx402.com/api/x402/counterparty-recheck-json?address=<PAYTO>&doma
 Abort on STOP or HOLD. Proceed only on GO. Do not cache a PASS forever without this call.
 
 ## Drop-in alternatives
-- **Wrapper:** `guard/` in this repo (not on npm). `withLionGuard(payFetch)` reads `payTo` from the header, pays the $0.001 screen, and throws `LionGuardBlockedError` unless the verdict is `PASS`. The same address again, including after the process exits, pays the $0.01 recheck and proceeds only on `GO`. Remembered addresses are in `~/.lion/screened-payto.json`.
+- **Wrapper:** `guard/` in this repo. `withLionGuard(payFetch)` reads `payTo` from the header, pays the $0.001 screen, and throws `LionGuardBlockedError` unless the verdict is `PASS`. The same address again, including after the process exits, pays the $0.01 recheck and proceeds only on `GO`. Remembered addresses are in `~/.lion/screened-payto.json`.
+- **AgentCash:** AgentCash has no pre-pay hook. Point the MCP server at `node guard/agentcash-proxy.mjs` instead of `npx agentcash@latest`. A `fetch` call is screened before the target is paid.
 - **MCP agents:** add `https://lionx402.com/api/mcp`. First call `lion_wallet_screen`. The same wallet again is `lion_counterparty_recheck`.
 
 ## Verify the receipt offline (no trust in LION at verify time)

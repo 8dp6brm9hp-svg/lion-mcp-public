@@ -7,7 +7,9 @@ Wrap your payment fetch. Before USDC leaves the wallet, Guard reads `payTo` from
 - **First time** this agent sees that address: the **$0.001** OFAC wallet screen. **PASS** pays the target. **WARN** or **BLOCK** aborts.
 - **Same address again**, including after this process exits: the **$0.01** recheck. **GO** pays the target. **HOLD** or **STOP** aborts. The address is stored in `~/.lion/screened-payto.json`.
 
-Not on npm. Use the files in this directory. It composes with the x402 client you already have. It does not re-implement payment, and it does not call the $0.05 compliance bundle.
+Use the files in this directory, or `npm i @lionx402/guard` once that package is on the registry. It composes with the x402 client you already have. It does not re-implement payment, and it does not call the $0.05 compliance bundle.
+
+AgentCash does not have a pre-pay hook. `node agentcash-proxy.mjs` is the install: it runs `agentcash@latest` and screens a `fetch` tool call before the target is paid. Set the MCP server command to `node` and the args to the absolute path of `agentcash-proxy.mjs`.
 
 ## Use it
 ```js

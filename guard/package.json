@@ -10,10 +10,17 @@
   "scripts": {
     "test": "node test.mjs"
   },
+  "bin": {
+    "lion-guard-agentcash": "./agentcash-proxy.mjs"
+  },
   "files": [
     "index.mjs",
+    "agentcash-proxy.mjs",
     "README.md"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "peerDependencies": {
     "x402-fetch": "*"
   },
