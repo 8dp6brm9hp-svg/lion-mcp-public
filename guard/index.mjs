@@ -3,15 +3,57 @@
 // x402 verifies the payment, never who you are paying. Before USDC leaves the wallet,
 // Guard reads payTo from the PAYMENT-REQUIRED header (body.accepts only if the header
 // is absent), pays LION's $0.001 OFAC screen, and proceeds only on PASS.
-// The same payTo again in this process pays the $0.01 recheck and proceeds only on GO.
+// The same payTo again pays the $0.01 recheck and proceeds only on GO.
+// The address is written to disk after a successful LION response, so the next
+// run of this agent rechecks instead of buying another $0.001 screen.
 //
 // Zero mandatory dependencies. You bring a payment-capable fetch. Guard does not
 // re-implement payment and does not call the $0.05 compliance bundle.
 
-const DEFAULT_LION = "https://lionx402.com";
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
 
-// Addresses already screened in this process. The next payment to one of them is a recheck.
+const DEFAULT_LION = "https://lionx402.com";
+const DEFAULT_MEMORY_FILE = join(homedir(), ".lion", "screened-payto.json");
+
+// Addresses already screened in this process. The file is what survives the exit.
 const seenPayTo = new Map();
+
+function memoryPath(opts) {
+  if (opts.memoryFile === false) return null;
+  if (typeof opts.memoryFile === "string" && opts.memoryFile) return opts.memoryFile;
+  return DEFAULT_MEMORY_FILE;
+}
+
+function readRemembered(file) {
+  if (!file) return new Set();
+  try {
+    const parsed = JSON.parse(readFileSync(file, "utf8"));
+    const list = Array.isArray(parsed) ? parsed : parsed && parsed.addresses;
+    if (!Array.isArray(list)) return new Set();
+    return new Set(
+      list.map((a) => String(a).toLowerCase()).filter((a) => /^0x[a-f0-9]{40}$/.test(a)),
+    );
+  } catch {
+    return new Set();
+  }
+}
+
+function remember(file, key) {
+  seenPayTo.set(key, true);
+  if (!file) return;
+  try {
+    const set = readRemembered(file);
+    set.add(key);
+    mkdirSync(dirname(file), { recursive: true });
+    const tmp = `${file}.${process.pid}.tmp`;
+    writeFileSync(tmp, JSON.stringify({ addresses: [...set].sort() }) + "\n");
+    renameSync(tmp, file);
+  } catch {
+    // A disk failure must not change the verdict. This process still has the map.
+  }
+}
 
 export class LionGuardBlockedError extends Error {
   constructor(verdict, flags, receipt, payTo) {
@@ -87,6 +129,7 @@ function mayProceed(kind, verdict) {
  * @param {boolean}  [opts.screen=true]       Set false to bypass screening.
  * @param {Function} [opts.onReceipt]         (receipt, payTo, verdict) => void
  * @param {Function} [opts.probeFetch=fetch]  Non-paying fetch used to read the target's 402.
+ * @param {string|false} [opts.memoryFile]    Screened addresses. False skips the file. Default ~/.lion/screened-payto.json.
  * @returns {Function} guardedFetch(url, init)
  */
 export function withLionGuard(payFetch, opts = {}) {
@@ -95,6 +138,7 @@ export function withLionGuard(payFetch, opts = {}) {
   const failClosed = opts.failClosed !== false;
   const screen = opts.screen !== false;
   const probeFetch = opts.probeFetch || globalThis.fetch;
+  const file = memoryPath(opts);
 
   return async function guardedFetch(url, init = {}) {
     if (!screen) return payFetch(url, init);
@@ -109,7 +153,7 @@ export function withLionGuard(payFetch, opts = {}) {
     }
 
     const key = cp.payTo.toLowerCase();
-    const again = seenPayTo.has(key);
+    const again = seenPayTo.has(key) || readRemembered(file).has(key);
     const kind = again ? "recheck" : "screen";
     const path = again ? "/api/x402/counterparty-recheck-json" : "/api/x402/wallet-screen-json";
     const screenUrl = `${lion}${path}?address=${encodeURIComponent(cp.payTo)}`;
@@ -122,7 +166,7 @@ export function withLionGuard(payFetch, opts = {}) {
       if (failClosed) throw new LionGuardBlockedError("SCREEN_ERROR", ["lion_screen_failed:" + (e && e.message || e)], null, cp.payTo);
       return payFetch(url, init);
     }
-    seenPayTo.set(key, true);
+    remember(file, key);
 
     const { verdict, flags, receipt } = readDecision(sjson, kind);
     if (typeof opts.onReceipt === "function") { try { opts.onReceipt(receipt, cp.payTo, verdict); } catch { /* user cb */ } }
