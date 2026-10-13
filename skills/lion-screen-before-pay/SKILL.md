@@ -20,7 +20,7 @@ GET https://lionx402.com/api/x402/wallet-screen-json?address=<PAYTO>
 - The $0.05 compliance bundle is optional, and only when this screen is not enough: `GET https://lionx402.com/api/x402/compliance-bundle-json?address=<PAYTO>&receipt=1`.
 
 ## Workflow
-1. Hit the target resource without paying. On `402`, read `payTo` from the `PAYMENT-REQUIRED` header (base64 JSON, `accepts[0].payTo`). Use the JSON body only if that header is absent. LION's own 402 body is `{}`.
+1. Hit the target resource without paying. On `402`, read `payTo` from the `PAYMENT-REQUIRED` header (base64 JSON, `accepts[0].payTo`). Use the JSON body only if that header is absent.
 2. **Screen it** — pay the $0.001 wallet screen for that `payTo` (it is itself an x402 call; pay it with the `cdp-x402` buyer flow below).
 3. **Decide:** `verdict == "PASS"` → proceed to pay the target. `WARN` or `BLOCK` → **ABORT**.
 4. **Keep the signed body.** It verifies offline (no callback) against LION's published key.
@@ -30,7 +30,7 @@ GET https://lionx402.com/api/x402/wallet-screen-json?address=<PAYTO>
 PAYTO=0x...                      # the counterparty you're about to pay
 LION="https://lionx402.com/api/x402/wallet-screen-json?address=$PAYTO"
 
-# LION's 402 body is {}. The challenge is the PAYMENT-REQUIRED header.
+# The challenge is the PAYMENT-REQUIRED header. Use the JSON body only when that header is absent.
 HDR=$(curl -sD - -o /tmp/lion_screen_body.json "$LION" | awk 'tolower($1)=="payment-required:" { gsub(/\r/,""); print $2; exit }')
 if [ -n "$HDR" ]; then
   REQ=$(printf '%s' "$HDR" | python3 -c 'import sys,base64,json; s=sys.stdin.read().strip().replace("-","+").replace("_","/"); s+="="*((4-len(s)%4)%4); print(json.dumps(json.loads(base64.b64decode(s))["accepts"][0], separators=(",", ":")))')
@@ -74,8 +74,8 @@ GET https://lionx402.com/api/x402/counterparty-recheck-json?address=<PAYTO>&doma
 Abort on STOP or HOLD. Proceed only on GO. Do not cache a PASS forever without this call.
 
 ## Drop-in alternatives
-- **Wrapper:** `guard/` in this repo. `withLionGuard(payFetch)` reads `payTo` from the header, pays the $0.001 screen, and throws `LionGuardBlockedError` unless the verdict is `PASS`. The same address again, including after the process exits, pays the $0.01 recheck and proceeds only on `GO`. Remembered addresses are in `~/.lion/screened-payto.json`.
-- **AgentCash:** AgentCash has no pre-pay hook. Point the MCP server at `node guard/agentcash-proxy.mjs` instead of `npx agentcash@latest`. A `fetch` call is screened before the target is paid.
+- **Wrapper:** `npm i @lionx402/guard`. `withLionGuard(payFetch)` reads `payTo` from the header, pays the $0.001 screen, and throws `LionGuardBlockedError` unless the verdict is `PASS`. The same address again, including after the process exits, pays the $0.01 recheck and proceeds only on `GO`. Remembered addresses are in `~/.lion/screened-payto.json`.
+- **AgentCash:** AgentCash has no pre-pay hook. Set the MCP server command to `npx` and the args to `--yes --package @lionx402/guard lion-guard-agentcash`, instead of `npx agentcash@latest`. A `fetch` call is screened before the target is paid.
 - **MCP agents:** add `https://lionx402.com/api/mcp`. First call `lion_wallet_screen`. The same wallet again is `lion_counterparty_recheck`.
 
 ## Verify the receipt offline (no trust in LION at verify time)
